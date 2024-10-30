@@ -1,0 +1,9 @@
+pipeline AirportsPipeline {
+    // Step 1: Connect the blocks in sequence (this will be modified as we add each block)
+    AirportsExtractor -> AirportsTextFileInterpreter -> AirportsCSVInterpreter -> AirportsTableInterpreter -> AirportsLoader;
+
+    // Step 2: Define the data source block
+    block AirportsExtractor oftype HttpExtractor {
+        url: "https://opendata.rhein-kreis-neuss.de/api/explore/v2.1/catalog/datasets/rhein-kreis-neuss-flughafen-weltweit/exports/csv?lang=en&timezone=Europe%2FBerlin&use_labels=true&delimiter=%3B";
+    }
+}
