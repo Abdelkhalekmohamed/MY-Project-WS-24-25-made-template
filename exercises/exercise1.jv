@@ -1,9 +1,33 @@
 pipeline AirportsPipeline {
-    // Step 1: Connect the blocks in sequence (this will be modified as we add each block)
+    // Step 1: Connect the blocks in sequence
     AirportsExtractor -> AirportsTextFileInterpreter -> AirportsCSVInterpreter -> AirportsTableInterpreter -> AirportsLoader;
 
     // Step 2: Define the data source block
     block AirportsExtractor oftype HttpExtractor {
         url: "https://opendata.rhein-kreis-neuss.de/api/explore/v2.1/catalog/datasets/rhein-kreis-neuss-flughafen-weltweit/exports/csv?lang=en&timezone=Europe%2FBerlin&use_labels=true&delimiter=%3B";
+    }
+
+    // Step 3: Interpret the data as plain text
+    block AirportsTextFileInterpreter oftype TextFileInterpreter { }
+
+    // Step 4: Interpret the data as CSV
+    block AirportsCSVInterpreter oftype CSVInterpreter {
+        delimiter: ';';  // Specifies that the data fields are separated by semicolons
+    }
+
+    // Step 5: Interpret the CSV data as a table with specified columns and types
+    block AirportsTableInterpreter oftype TableInterpreter {
+        header: true;
+        columns: [
+            "Lfd. Nummer" oftype INTEGER,
+            "Name des Flughafens" oftype TEXT,
+            "Ort" oftype TEXT,
+            "Land" oftype TEXT,
+            "IATA" oftype TEXT,
+            "ICAO" oftype TEXT,
+            "Latitude" oftype FLOAT,
+            "Longitude" oftype FLOAT,
+            "Altitude" oftype INTEGER
+        ];
     }
 }
