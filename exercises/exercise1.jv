@@ -1,3 +1,7 @@
+//Exercise 1
+//The task is to build an automated data pipeline using Jayvee to process data from a source, then write the processed data into a SQLite database.
+
+
 pipeline AirportsPipeline {
     // Step 1: Connect the blocks in sequence
     AirportsExtractor -> AirportsTextFileInterpreter -> AirportsCSVInterpreter -> AirportsTableInterpreter -> AirportsLoader;
@@ -15,19 +19,25 @@ pipeline AirportsPipeline {
         delimiter: ';';  // Specifies that the data fields are separated by semicolons
     }
 
-    // Step 5: Interpret the CSV data as a table with specified columns and types
+    // Step 5: Interpret the CSV as a table with specific columns
     block AirportsTableInterpreter oftype TableInterpreter {
         header: true;
         columns: [
-            "Lfd. Nummer" oftype INTEGER,
-            "Name des Flughafens" oftype TEXT,
-            "Ort" oftype TEXT,
-            "Land" oftype TEXT,
-            "IATA" oftype TEXT,
-            "ICAO" oftype TEXT,
-            "Latitude" oftype FLOAT,
-            "Longitude" oftype FLOAT,
-            "Altitude" oftype INTEGER
+            "Lfd. Nummer" oftype integer,
+            "Name des Flughafens" oftype text,
+            "Ort" oftype text,
+            "Land" oftype text,
+            "IATA" oftype text,
+            "ICAO" oftype text,
+            "Latitude" oftype decimal,
+            "Longitude" oftype decimal,
+            "Altitude" oftype integer
         ];
+    }
+
+    // Step 6: Load data into SQLite
+    block AirportsLoader oftype SQLiteLoader {
+        table: "airports";           // The table name in SQLite database
+        file: "./airports.sqlite";    // The path for the SQLite database file
     }
 }
