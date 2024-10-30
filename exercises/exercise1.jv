@@ -1,4 +1,4 @@
-//Exercise 1
+//Exercise 1 
 //The task is to build an automated data pipeline using Jayvee to process data from a source, then write the processed data into a SQLite database.
 
 
