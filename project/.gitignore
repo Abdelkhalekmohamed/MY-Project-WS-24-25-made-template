@@ -1,0 +1,13 @@
+# Ignore raw and processed data directories
+data/raw/
+data/processed/
+
+# Ignore any log files
+*.log
+
+# Ignore Python compiled files
+*.pyc
+__pycache__/
+
+# Ignore any temporary files
+*.tmp
