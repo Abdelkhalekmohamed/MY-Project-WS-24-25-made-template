@@ -1,0 +1,106 @@
+pipeline DataPipeline {
+
+    // Chain of the pipeline (Data/Block flow)
+    DownloadData
+        -> InterpretXLSXFile
+        -> SelectSheet
+        -> ExtractDataRange
+        -> RenameHeaders
+        -> ParseBondTable
+        -> SaveBondTable;
+
+    // 2nd table uses similar steps but creates a GDP table
+    RenameHeaders
+        -> ParseGDPTable
+        -> SaveGDPTable;
+
+    // Step 1: Download the dataset from the specified URL
+    block DownloadData oftype HttpExtractor {
+        url: "https://thedocs.worldbank.org/en/doc/7d852628d96b9411d43e5d36d5dff941-0050062022/original/Graphs-Chapter-5-02082022.xlsx";
+    }
+
+    // Step 2: Interpret the downloaded file as an XLSX file
+    block InterpretXLSXFile oftype XLSXInterpreter { }
+
+    // Step 3: Select the 'Figure S5.1.2' sheet from the XLSX file
+    block SelectSheet oftype SheetPicker {
+        sheetName: "Figure S5.1.2";
+    }
+
+    // Step 4: Extract the data range of interest (columns P to S, rows 2 to 45)
+    block ExtractDataRange oftype CellRangeSelector {
+        select: range P2:S45;
+    }
+
+    // Step 5: Rename headers for columns to meaningful names
+    block RenameHeaders oftype CellWriter {
+        at: range A1:D1; // Renaming the first row to set feature names
+        write: [
+            "Country Code",        // Replace "ISO3"
+            "Economy",             // No change needed
+            "GDP per Capita",      // Replace "GDP per capita (US$, thousands)"
+            "Bond Issuance Share"  // Replace "Share of government sustainable bonds"
+        ];
+    }
+
+    // Step 6a: Parse the bond issuance data as a table
+    block ParseBondTable oftype TableInterpreter {
+        header: true; // Use the first row as headers
+        columns: [
+            "Country Code" oftype ValidCode,        // Validate as ISO Alpha-3 code
+            "Bond Issuance Share" oftype ValidBond // Ensure the value is between 0 and 1
+        ];
+    }
+
+    // Step 6b: Parse the GDP per capita data as a table
+    block ParseGDPTable oftype TableInterpreter {
+        header: true; // Use the first row as headers
+        columns: [
+            "Country Code" oftype ValidCode,  // Validate as ISO Alpha-3 code
+            "GDP per Capita" oftype ValidGDP // Ensure the value is a positive decimal
+        ];
+    }
+
+    // Step 7a: Save the bond issuance data into a SQLite table
+    block SaveBondTable oftype SQLiteLoader {
+        table: "bondIssuance";             // Name of the SQLite table
+        file: "./country-stats.sqlite";    // SQLite database file
+    }
+
+    // Step 7b: Save the GDP per capita data into a SQLite table
+    block SaveGDPTable oftype SQLiteLoader {
+        table: "gdpPerCapita";             // Name of the SQLite table
+        file: "./country-stats.sqlite";    // SQLite database file
+    }
+
+    // --- Validation Constraints and Value Types ---
+
+    // Valid Country Code: Must comply with ISO 3166-1 Alpha-3 format
+    valuetype ValidCode oftype CountryCodeAlpha3 {
+        constraints: []; // Uses built-in constraints for CountryCodeAlpha3
+    }
+
+    // GDP Constraint: Must be a positive decimal (greater than 0)
+    constraint GPDConstraint oftype RangeConstraint {
+        lowerBound: 0;
+        lowerBoundInclusive: false; // Strictly greater than 0
+    }
+
+    // Valid GDP: Applies GDP constraint
+    valuetype ValidGDP oftype decimal {
+        constraints: [GPDConstraint];
+    }
+
+    // Bond Constraint: Must be a decimal between 0 and 1 (inclusive)
+    constraint BondConstraint oftype RangeConstraint {
+        lowerBound: 0;
+        lowerBoundInclusive: true;  // Includes 0
+        upperBound: 1;
+        upperBoundInclusive: true;  // Includes 1
+    }
+
+    // Valid Bond Issuance Share: Applies bond constraint
+    valuetype ValidBond oftype decimal {
+        constraints: [BondConstraint];
+    }
+}
