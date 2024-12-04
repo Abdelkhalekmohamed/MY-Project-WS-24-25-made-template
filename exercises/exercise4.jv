@@ -63,14 +63,14 @@ pipeline CombinedTemperaturesPipeline {
     // Block 9: Transform temperature column from Celsius to Fahrenheit
     block TransformTemperatureFahrenheit oftype TableTransformer {
         inputColumns: ["temperature"];
-        outputColumn: "temp_fahrenheit"; // Create a new column
+        outputColumn: "temperature"; // Overwrite the original column
         uses: ConvertCelsiusToFahrenheit;
     }
 
     // Block 10: Transform battery temperature column from Celsius to Fahrenheit
     block TransformBatteryTemperatureFahrenheit oftype TableTransformer {
         inputColumns: ["battery_temperature"];
-        outputColumn: "battery_temp_fahrenheit"; // Create a new column
+        outputColumn: "battery_temperature"; // Overwrite the original column
         uses: ConvertCelsiusToFahrenheit;
     }
 
