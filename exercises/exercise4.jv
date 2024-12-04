@@ -1,54 +1,61 @@
-pipeline CombinedTemperaturesPipeline {
-    ExtractData 
-        -> ArchiveData 
-        -> PickData 
-        -> InterpretTextFile 
-        -> InterpretCsvFile 
-        -> RenameColumns 
-        -> DeleteExtraColumns 
-        -> InterpretTable 
-        -> TransformTemperatureFahrenheit 
-        -> TransformBatteryTemperatureFahrenheit 
-        -> SaveToDatabase;
+pipeline UniqueWeatherPipeline {
 
-    // Block 1: Download ZIP file
-    block ExtractData oftype HttpExtractor {
+    // Pipeline structure
+    DataFetcher 
+        -> ArchiveHandler
+        -> CSVSelector 
+        -> TextFileProcessor
+        -> CSVParser
+        -> RenamePrimaryHeaders
+        -> AddBatteryTemperatureHeader
+        -> UnnecessaryColumnsRemover
+        -> DataStructureValidator
+        -> ConvertTemperatureToFahrenheit
+        -> ConvertBatteryTemperatureToFahrenheit
+        -> SaveToSQLite;
+
+    // 1. Download the dataset
+    block DataFetcher oftype HttpExtractor {
         url: "https://www.mowesta.com/data/measure/mowesta-dataset-20221107.zip";
     }
 
-    // Block 2: Extract ZIP file
-    block ArchiveData oftype ArchiveInterpreter {
+    // 2. Handle the archive extraction
+    block ArchiveHandler oftype ArchiveInterpreter {
         archiveType: "zip";
     }
 
-    // Block 3: Select CSV file
-    block PickData oftype FilePicker {
+    // 3. Select the target CSV file
+    block CSVSelector oftype FilePicker {
         path: "/data.csv";
     }
 
-    // Block 4: Interpret raw text file
-    block InterpretTextFile oftype TextFileInterpreter {
-        encoding: "utf8";
-    }
+    // 4. Process raw text file
+    block TextFileProcessor oftype TextFileInterpreter {}
 
-    // Block 5: Parse CSV with correct delimiter
-    block InterpretCsvFile oftype CSVInterpreter {
+    // 5. Parse the CSV file with appropriate delimiter
+    block CSVParser oftype CSVInterpreter {
         delimiter: ";";
     }
 
-    // Block 6: Rename German column headers to English
-    block RenameColumns oftype CellWriter {
-        at: range A1:F1;
-        write: ["id", "producer", "model", "month", "temperature", "battery_temperature"];
+    // 6. Rename the primary column headers (first five)
+    block RenamePrimaryHeaders oftype CellWriter {
+        at: range A1:E1;
+        write: ["id", "producer", "model", "month", "temperature"];
     }
 
-    // Block 7: Delete unnecessary columns
-    block DeleteExtraColumns oftype ColumnDeleter {
-        delete: [column G, column H, column I];
+    // 7. Add header for battery temperature
+    block AddBatteryTemperatureHeader oftype CellWriter {
+        at: cell J1;
+        write: ["battery_temperature"];
     }
 
-    // Block 8: Interpret the table with appropriate value types
-    block InterpretTable oftype TableInterpreter {
+    // 8. Remove unnecessary columns (after column E)
+    block UnnecessaryColumnsRemover oftype ColumnDeleter {
+        delete: [column F, column G, column H, column I];
+    }
+
+    // 9. Validate the table structure and types
+    block DataStructureValidator oftype TableInterpreter {
         header: true;
         columns: [
             "id" oftype ValidID,
@@ -60,50 +67,49 @@ pipeline CombinedTemperaturesPipeline {
         ];
     }
 
-    // Block 9: Transform temperature column from Celsius to Fahrenheit
-    block TransformTemperatureFahrenheit oftype TableTransformer {
+    // 10. Convert Celsius to Fahrenheit for temperature
+    transform CelsiusToFahrenheit {
+        from CelsiusValue oftype decimal;
+        to FahrenheitValue oftype decimal;
+        FahrenheitValue: (CelsiusValue * 9/5) + 32;
+    }
+
+    block ConvertTemperatureToFahrenheit oftype TableTransformer {
         inputColumns: ["temperature"];
-        outputColumn: "temperature"; // Overwrite the original column
-        uses: ConvertCelsiusToFahrenheit;
+        outputColumn: "temperature"; // Overwrites original column
+        uses: CelsiusToFahrenheit;
     }
 
-    // Block 10: Transform battery temperature column from Celsius to Fahrenheit
-    block TransformBatteryTemperatureFahrenheit oftype TableTransformer {
+    // 11. Convert Celsius to Fahrenheit for battery temperature
+    block ConvertBatteryTemperatureToFahrenheit oftype TableTransformer {
         inputColumns: ["battery_temperature"];
-        outputColumn: "battery_temperature"; // Overwrite the original column
-        uses: ConvertCelsiusToFahrenheit;
+        outputColumn: "battery_temperature"; // Overwrites original column
+        uses: CelsiusToFahrenheit;
     }
 
-    // Block 11: Save the final data to SQLite database
-    block SaveToDatabase oftype SQLiteLoader {
+    // 12. Save the processed data to SQLite database
+    block SaveToSQLite oftype SQLiteLoader {
         table: "temperatures";
         file: "./temperatures.sqlite";
     }
 
-    // Transform for Celsius to Fahrenheit conversion
-    transform ConvertCelsiusToFahrenheit {
-        from celsius oftype decimal;
-        to fahrenheit oftype decimal;
-        fahrenheit: (celsius * 9/5) + 32;
+    // Validation constraints
+    constraint PositiveIdConstraint on integer:
+        value > 0;
+
+    valuetype ValidID oftype integer {
+        constraints: [PositiveIdConstraint];
     }
-}
 
-// Validation Constraints
-valuetype ValidID oftype integer {
-    constraints: [PositiveIDConstraint];
-}
+    constraint ValidMonthRange oftype RangeConstraint {
+        lowerBound: 1;
+        lowerBoundInclusive: true;
+        upperBound: 12;
+        upperBoundInclusive: true;
+    }
 
-constraint PositiveIDConstraint on integer:
-    value > 0;
-
-constraint ValidMonthConstraint oftype RangeConstraint {
-    lowerBound: 1;
-    lowerBoundInclusive: true;
-    upperBound: 12;
-    upperBoundInclusive: true;
-}
-
-valuetype ValidMonth oftype integer {
-    constraints: [ValidMonthConstraint];
+    valuetype ValidMonth oftype integer {
+        constraints: [ValidMonthRange];
+    }
 }
 
