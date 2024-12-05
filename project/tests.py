@@ -19,7 +19,7 @@ class TestPipeline(unittest.TestCase):
 
     def test_csv_content(self):
         """
-        Test if the merged data CSV contains valid data.
+        Test if the merged data CSV contains valid data and correct column names.
         """
         if os.path.isfile(self.merged_data_path):
             merged_data = pd.read_csv(self.merged_data_path)
@@ -27,6 +27,8 @@ class TestPipeline(unittest.TestCase):
             self.assertIn("Year", merged_data.columns, "CSV is missing 'Year' column.")
             self.assertIn("Emissions", merged_data.columns, "CSV is missing 'Emissions' column.")
             self.assertIn("firespots", merged_data.columns, "CSV is missing 'firespots' column.")
+            self.assertIn("Reasons of Emission", merged_data.columns, "CSV is missing 'Reasons of Emission' column.")
+            self.assertNotIn("Unit", merged_data.columns, "CSV should not have 'Unit' column.")
 
     def test_sqlite_content(self):
         """
@@ -48,6 +50,33 @@ class TestPipeline(unittest.TestCase):
             self.assertIn("Year", merged_data.columns, "Table is missing 'Year' column.")
             self.assertIn("Emissions", merged_data.columns, "Table is missing 'Emissions' column.")
             self.assertIn("firespots", merged_data.columns, "Table is missing 'firespots' column.")
+            self.assertIn("Reasons of Emission", merged_data.columns, "Table is missing 'Reasons of Emission' column.")
+            self.assertNotIn("Unit", merged_data.columns, "Table should not have 'Unit' column.")
+
+    def test_firespots_proportionality(self):
+        """
+        Test if firespots are distributed proportionally across rows within the same year.
+        """
+        if os.path.isfile(self.merged_data_path):
+            merged_data = pd.read_csv(self.merged_data_path)
+
+            # Group by Year and sum firespots
+            firespots_sum_by_year = merged_data.groupby("Year")["firespots"].sum().to_dict()
+
+            # Verify that firespots in the merged dataset match the expected totals from Amazon Fires data
+            amazon_fires_path = os.path.join(self.processed_data_dir, "Amazon_Fires.csv")
+            if os.path.isfile(amazon_fires_path):
+                amazon_fires_data = pd.read_csv(amazon_fires_path)
+                expected_firespots = amazon_fires_data.set_index("year")["firespots"].to_dict()
+
+                for year, total_firespots in firespots_sum_by_year.items():
+                    self.assertAlmostEqual(
+                        total_firespots, 
+                        expected_firespots.get(year, 0), 
+                        delta=0.01,  # Allow for minor rounding differences
+                        msg=f"Firespot total mismatch for year {year}."
+                    )
 
 if __name__ == "__main__":
     unittest.main()
+
