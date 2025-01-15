@@ -85,6 +85,12 @@ try:
     # Rename columns for clarity
     filtered_data.rename(columns={"Item": "Reasons of Emission"}, inplace=True)
 
+    # Save filtered FAOSTAT emissions data as a separate CSV
+    faostat_emissions_path = os.path.join(processed_data_dir, "Emissions_Data.csv")
+    filtered_data.to_csv(faostat_emissions_path, index=False)
+    print(f"Emissions data saved to: {faostat_emissions_path}")
+    logging.info(f"Emissions data saved to: {faostat_emissions_path}")
+
     print("FAOSTAT and UNFCCC data processed.")
     logging.info("FAOSTAT and UNFCCC data processed.")
 
@@ -110,6 +116,12 @@ try:
 
         # Filter for years 1999 to 2019
         amazon_fires_data = amazon_fires_data[(amazon_fires_data["year"] >= 1999) & (amazon_fires_data["year"] <= 2019)]
+
+        # Save Amazon Fires data as a separate CSV
+        amazon_fires_output_path = os.path.join(processed_data_dir, "Amazon_Fires_Data.csv")
+        amazon_fires_data.to_csv(amazon_fires_output_path, index=False)
+        print(f"Amazon Fires data saved to: {amazon_fires_output_path}")
+        logging.info(f"Amazon Fires data saved to: {amazon_fires_output_path}")
 
         print("Amazon Fires data processed.")
         logging.info("Amazon Fires data processed.")
