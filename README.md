@@ -1,36 +1,80 @@
-# Methods of Advanced Data Engineering Template Project
+# Analyzing Rainforest Degradation and CO2 Emissions in the Brazilian Amazon
 
-This template project provides some structure for your open data project in the MADE module at FAU.
-This repository contains (a) a data science project that is developed by the student over the course of the semester, and (b) the exercises that are submitted over the course of the semester.
-To get started, please follow these steps:
-1. Create your own fork of this repository. Feel free to rename the repository right after creation, before you let the teaching instructors know your repository URL. **Do not rename the repository during the semester**.
+## Introduction
+The Brazilian Amazon, often called the "lungs of the Earth," plays a critical role in global climate stability. However, it faces significant threats from deforestation and fires, which degrade its ability to absorb carbon dioxide and release large amounts of CO2, a major driver of climate change. This project explores the connection between firespot activity and carbon emissions in the Brazilian Amazon between 1999 and 2019. The goal is to uncover trends and insights to better understand the broader implications of these changes for global climate systems.
 
-## Project Work
-Your data engineering project will run alongside lectures during the semester. We will ask you to regularly submit project work as milestones, so you can reasonably pace your work. All project work submissions **must** be placed in the `project` folder.
+## Main Question
+**How has rainforest degradation in the Brazilian Amazon contributed to carbon emissions (CO2) and climate change?**
 
-### Exporting a Jupyter Notebook
-Jupyter Notebooks can be exported using `nbconvert` (`pip install nbconvert`). For example, to export the example notebook to HTML: `jupyter nbconvert --to html examples/final-report-example.ipynb --embed-images --output final-report.html`
+## Data Sources
+The analysis integrates three key datasets:
 
+1. **FAOSTAT and UNFCCC Emissions Data**:
+   - Metadata URL: https://www.fao.org/faostat/en/#data/GT/metadata
+   - Data URL: https://bulks-faostat.fao.org/production/Emissions_Totals_E_Americas.zip
+   - Description: This dataset provides annual CO2 emissions segmented by causes, such as forest fires and savanna fires, from 1999 to 2019. It combines FAOSTAT and UNFCCC data for increased granularity.
+   - License: https://creativecommons.org/licenses/by/4.0/
 
-## Exercises
-During the semester you will need to complete exercises using [Jayvee](https://github.com/jvalue/jayvee). You **must** place your submission in the `exercises` folder in your repository and name them according to their number from one to five: `exercise<number from 1-5>.jv`.
+2. **Amazon Fires Dataset (Kaggle)**:
+   - Metadata URL: https://www.kaggle.com/datasets/mbogernetto/brazilian-amazon-rainforest-degradation
+   - Description: Contains firespot counts in the Brazilian Amazon, highlighting temporal fire activity patterns from 1999 to 2019.
+   - License: https://creativecommons.org/publicdomain/zero/1.0/
 
-In regular intervals, exercises will be given as homework to complete during the semester. Details and deadlines will be discussed in the lecture, also see the [course schedule](https://made.uni1.de/).
+## Data Pipeline
+This project includes an automated data pipeline to preprocess, clean, and merge datasets:
+1. **Download Datasets**:
+   - FAOSTAT emissions data is downloaded and filtered for Brazil.
+   - Kaggle firespot data is retrieved using `kagglehub`.
+2. **Filter and Process Data**:
+   - Data is filtered for years 1999–2019.
+   - Columns are standardized, missing values removed, and outliers handled.
+3. **Merge Datasets**:
+   - Firespot and CO2 emissions data are merged into a single dataset.
+   - Firespot data is aligned proportionally to CO2 emissions for consistency.
+4. **Store Processed Data**:
+   - The final cleaned dataset is stored as a CSV file and in an SQLite database.
 
-### Exercise Feedback
-We provide automated exercise feedback using a GitHub action (that is defined in `.github/workflows/exercise-feedback.yml`). 
+## Work Packages
+1. **Data Exploration**:
+   - Analyze and clean the raw datasets.
+   - Investigate missing or invalid data and handle accordingly.
 
-To view your exercise feedback, navigate to Actions → Exercise Feedback in your repository.
+2. **Pipeline Development**:
+   - Build an automated data pipeline for downloading, cleaning, and merging data.
+   - Ensure reproducibility by logging all steps.
 
-The exercise feedback is executed whenever you make a change in files in the `exercise` folder and push your local changes to the repository on GitHub. To see the feedback, open the latest GitHub Action run, open the `exercise-feedback` job and `Exercise Feedback` step. You should see command line output that contains output like this:
+3. **Visualization and Analysis**:
+   - Generate visualizations such as trends, scatterplots, and flowcharts to analyze data.
+   - Conduct correlation analysis to explore relationships between emissions and firespots.
 
-```sh
-Found exercises/exercise1.jv, executing model...
-Found output file airports.sqlite, grading...
-Grading Exercise 1
-	Overall points 17 of 17
-	---
-	By category:
-		Shape: 4 of 4
-		Types: 13 of 13
-```
+4. **Final Report and Presentation**:
+   - Summarize findings in the final report and presentation slides.
+   - Record a 10-minute presentation video highlighting the project.
+
+## Key Findings
+1. **Trends**:
+   - CO2 emissions decreased significantly between 2005 and 2015, likely due to deforestation control policies.
+   - Firespot activity showed a volatile pattern, with peaks in 2002 and 2004 and a decline after 2010.
+
+2. **Correlation Analysis**:
+   - A weak positive correlation (Pearson coefficient ~0.2) was found between firespot activity and CO2 emissions, indicating that fires alone do not fully explain emission variations.
+
+3. **Broader Insights**:
+   - Industrial processes, agriculture, and policy changes play significant roles in driving CO2 emissions alongside deforestation and fires.
+
+## Limitations
+- Aggregated annual data may mask finer temporal trends (e.g., monthly or seasonal).
+- Other emission sources, such as industrial processes, were not separately analyzed.
+- Missing or incomplete data may affect results.
+
+## Conclusion
+This project highlights the complex dynamics between firespot activity and CO2 emissions in the Brazilian Amazon. While fires contribute to emissions, other factors significantly impact the observed trends. These findings underscore the need for more detailed data and integrated approaches to tackle rainforest degradation and its environmental consequences.
+
+## How to Run This Project
+1. Place raw datasets in the `data/raw` directory.
+2. Run the `data_pipeline.py` script to preprocess and clean data.
+3. View processed data in `data/processed` as a CSV or SQLite database.
+
+## License
+This project is licensed under https://creativecommons.org/licenses/by/4.0/
+
